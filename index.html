@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Моя велосипедная статистика</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Roboto:wght@300;400;700&display=swap');
+
+:root {
+    --primary-color: #00ffff;
+    --secondary-color: #ff00ff;
+    --background-color: #121212;
+    --surface-color: #1e1e1e;
+    --text-color: #ffffff;
+    --accent-color: #ff4081;
+    --neumorphic-light: #2c2c2c;
+    --neumorphic-dark: #0a0a0a;
+}
+
+/* Base styles */
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    transition: all 0.3s ease;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem;
+}
+
+/* Neumorphic card style */
+.card {
+    background-color: var(--surface-color);
+    border-radius: 20px;
+    box-shadow: 
+        20px 20px 60px var(--neumorphic-dark),
+        -20px -20px 60px var(--neumorphic-light);
+    padding: 2rem;
+    margin-bottom: 3rem;
+    transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+    transform: rotate(45deg);
+    pointer-events: none;
+    transition: all 0.8s ease;
+}
+
+.card:hover {
+    transform: translateY(-10px) scale(1.02);
+    box-shadow: 
+        30px 30px 80px var(--neumorphic-dark),
+        -30px -30px 80px var(--neumorphic-light);
+}
+
+.card:hover::before {
+    transform: rotate(45deg) translate(50%, 50%);
+}
+
+/* Stat styles */
+.stat {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 3.5rem;
+    font-weight: 900;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+    text-shadow: 0 0 10px var(--primary-color);
+    transition: all 0.3s ease;
+}
+
+.stat-label {
+    font-size: 1.2rem;
+    color: var(--secondary-color);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+/* Bicycle image styles */
+.bicycle-image {
+    width: 100%;
+    max-width: 700px;
+    height: auto;
+    border-radius: 20px;
+    margin-bottom: 3rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    transition: all 0.5s ease;
+}
+
+.bicycle-image:hover {
+    transform: scale(1.05);
+    box-shadow: 0 15px 40px rgba(0, 255, 255, 0.3);
+}
+
+/* Tab styles */
+.tabs {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 3rem;
+    perspective: 1000px;
+}
+
+.tab {
+    padding: 1rem 2rem;
+    background-color: var(--surface-color);
+    color: var(--text-color);
+    border-radius: 10px;
+    margin: 0 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 
+        5px 5px 15px var(--neumorphic-dark),
+        -5px -5px 15px var(--neumorphic-light);
+    position: relative;
+    overflow: hidden;
+}
+
+.tab::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: linear-gradient(
+        to bottom right,
+        rgba(255, 255, 255, 0.2),
+        rgba(255, 255, 255, 0)
+    );
+    transform: rotate(45deg);
+    transition: all 0.3s ease;
+}
+
+.tab:hover::after {
+    transform: rotate(45deg) translate(50%, 50%);
+}
+
+.tab.active {
+    background-color: var(--primary-color);
+    color: var(--background-color);
+    transform: translateZ(20px);
+    box-shadow: 
+        0 0 20px var(--primary-color),
+        0 0 40px var(--primary-color);
+}
+
+/* Tab content styles */
+.tab-content {
+    display: none;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: all 0.5s ease;
+}
+
+.tab-content.active {
+    display: block;
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Specification grid styles */
+.spec-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+}
+
+.spec-item {
+    background-color: var(--surface-color);
+    padding: 1.5rem;
+    border-radius: 15px;
+    transition: all 0.3s ease;
+    box-shadow: 
+        inset 5px 5px 10px var(--neumorphic-dark),
+        inset -5px -5px 10px var(--neumorphic-light);
+}
+
+.spec-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 
+        inset 8px 8px 16px var(--neumorphic-dark),
+        inset -8px -8px 16px var(--neumorphic-light);
+}
+
+.spec-label {
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: var(--accent-color);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.spec-value {
+    color: var(--text-color);
+    font-size: 1.1rem;
+}
+
+/* Chart styles */
+#recordChart {
+    max-width: 800px;
+    margin: 3rem auto;
+    background-color: var(--surface-color);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 
+        10px 10px 30px var(--neumorphic-dark),
+        -10px -10px 30px var(--neumorphic-light);
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.fade-in {
+    animation: fadeIn 1s ease-out;
+}
+
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+/* Counter styles */
+.counter {
+    display: inline-block;
+    min-width: 60px;
+    font-family: 'Orbitron', sans-serif;
+    font-weight: 700;
+    color: var(--accent-color);
+    text-shadow: 0 0 10px var(--accent-color);
+}
+
+/* Additional bicycle-themed elements */
+.chain-border {
+    border: 4px solid var(--primary-color);
+    border-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="20" viewBox="0 0 40 20"><circle cx="10" cy="10" r="8" fill="none" stroke="%2300ffff" stroke-width="2"/><circle cx="30" cy="10" r="8" fill="none" stroke="%2300ffff" stroke-width="2"/></svg>') 20 / 1 / 0 round;
+}
+
+.gear-background {
+    position: relative;
+}
+
+.gear-background::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><path d="M50 25L60 40L75 35L70 50L85 60L70 65L75 80L60 75L50 90L40 75L25 80L30 65L15 60L30 50L25 35L40 40L50 25Z" fill="none" stroke="%2300ffff" stroke-width="1" opacity="0.1"/></svg>');
+    background-repeat: repeat;
+    opacity: 0.05;
+    z-index: -1;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .container {
+        padding: 1rem;
+    }
+
+    .stat {
+        font-size: 2.5rem;
+    }
+
+    .tab {
+        padding: 0.75rem 1.5rem;
+        font-size: 0.9rem;
+    }
+
+    .spec-grid {
+        grid-template-columns: 1fr;
+    }
+}
+    </style>
+</head>
+<body class="fade-in">
+    <div class="container">
+        <h1 class="text-4xl font-bold text-center mb-8">Мое путешествие на велосипеде</h1>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="records">Рекорды</div>
+            <div class="tab" data-tab="specs">Технические характеристики</div>
+        </div>
+        
+        <div id="records" class="tab-content active">
+            <div class="card">
+                <img src="https://telegra.ph/file/d4a62b1a23d2634821e4d.jpg" alt="My Bicycle" class="bicycle-image">
+
+<h2 class="text-xl font-bold mb-3">Горный велосипед AZIMUT 29</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                        <div class="stat"><span class="counter" data-target="224.11">0</span> км</div>
+                        <div class="stat-label">Общее расстояние</div>
+                    </div>
+                    <div>
+                        <div class="stat"><span class="counter" data-target="42.10">0</span> км</div>
+                        <div class="stat-label">Самая длинная одиночная поездка</div>
+                    </div>
+                    <div>
+                        <div class="stat"><span class="counter" data-target="15.9">0</span> км/ч</div>
+                        <div class="stat-label">Самая высокая средняя скорость</div>
+                    </div>
+                    <div>
+                        <div class="stat"><span class="counter" data-target="35.2">0</span> км/ч</div>
+                        <div class="stat-label">Максимальная скорость</div>
+                    </div>
+                    <div>
+                        <div class="stat"><span class="counter" data-target="777.6">0</span></div>
+                        <div class="stat-label">Больше всего калорий сожжено</div>
+                    </div>
+                    <div>
+                        <div class="stat"><span class="counter" data-target="3.45"></span> мин/км</div>
+                        <div class="stat-label">Самый быстрый темп</div>
+                    </div>
+                </div>
+            </div>
+<div class="card">
+    <h3 class="text-xl font-bold mb-4">Цель к норме велосипедиста</h3>
+    <div id="goalStats" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const goalStats = {
+            duration: 1 * 60, // 1 час в минутах
+            distance: 20.75, // км
+            avgSpeed: 20, // км/ч
+            maxSpeed: 40, // км/ч
+            avgPace: 3 * 60 // 3 мин в секундах
+        };
+
+        const records = {
+            distance: parseFloat(document.querySelector('.counter[data-target="224.11"]').getAttribute('data-target')),
+            longestRide: parseFloat(document.querySelector('.counter[data-target="42.10"]').getAttribute('data-target')),
+            avgSpeed: parseFloat(document.querySelector('.counter[data-target="15.9"]').getAttribute('data-target')),
+            maxSpeed: parseFloat(document.querySelector('.counter[data-target="35.2"]').getAttribute('data-target')),
+            calories: parseFloat(document.querySelector('.counter[data-target="777.6"]').getAttribute('data-target')),
+            bestPace: document.querySelector('.counter[data-target="3.45"]').getAttribute('data-target')
+        };
+
+        // Parse best pace as minutes and seconds
+        const bestPaceParts = records.bestPace.split('.');
+        const bestPaceMinutes = parseInt(bestPaceParts[0]);
+        const bestPaceSeconds = parseInt(bestPaceParts[1]) * 0.6; // converting decimal part to seconds
+        const bestPaceInSeconds = bestPaceMinutes * 60 + bestPaceSeconds;
+
+        const remaining = {
+            distance: Math.max(0, goalStats.distance - records.distance),
+            avgSpeed: Math.max(0, goalStats.avgSpeed - records.avgSpeed),
+            maxSpeed: Math.max(0, goalStats.maxSpeed - records.maxSpeed),
+            avgPace: Math.max(0, bestPaceInSeconds - goalStats.avgPace) // оставшееся время в секундах
+        };
+
+        const goalStatsElement = document.getElementById('goalStats');
+        goalStatsElement.innerHTML = `
+            <div>
+                <div class="stat">70 (42.1 + 29.9) км</div>
+                <div class="stat-label">Осталось до цели по расстоянию</div>
+            </div>
+            <div>
+                <div class="stat">${remaining.avgSpeed.toFixed(2)} км/ч</div>
+                <div class="stat-label">Осталось до цели по средней скорости</div>
+            </div>
+            <div>
+                <div class="stat">${remaining.maxSpeed.toFixed(2)} км/ч</div>
+                <div class="stat-label">Осталось до цели по максимальной скорости</div>
+            </div>
+            
+        `;
+    });
+</script>
+
+            </div>
+        </div>
+        
+        <div id="specs" class="tab-content">
+            <div class="card">
+                <h2 class="text-xl font-bold mb-4">Горный велосипед Azimut Aqua 29 FR/D 19" Frame Black-Gray</h2>
+                <div class="spec-grid">
+                    <div class="spec-item">
+                        <div class="spec-label">Бренд</div>
+                        <div class="spec-value">AZIMUT</div>
+                    </div>
+                    <div class="spec-item">
+                        <div class="spec-label">Тип</div>
+                        <div class="spec-value">Горный MTB</div>
+                    </div>
+                    <div class="spec-item">
+                        <div class="spec-label">Размер рамры</div>
+                        <div class="spec-value">19</div>
+                    </div>
+                    <div class="spec-item">
+                        <div class="spec-label">Амортизация</div>
+                        <div class="spec-value">Передняя</div>
+                    </div>
+                    <div class="spec-item">
+                        <div class="spec-label">Материал рамы</div>
+                        <div class="spec-value">Углеродистая сталь</div>
+<div class="spec-value" style="color: red; font-weight: bold;">Улучшение для велосипеда — Алюмиий</div>
+                    </div>
+                    <div class="spec-item">
+                        <div class="spec-label">Размер колес</div>
+                        <div class="spec-value">29</div>
+                    </div>
+                    <div class="spec-item">
+                        <div class="spec-label">Тормоза</div>
+                        <div class="spec-value">Механический диск (передний и задний)</div>
+                        <div class="spec-value" style="color: red; font-weight: bold;">Улучшение для велосипеда — Гидравлические дисковые тормоза</div>
+                    </div>
+                    <div class="spec-item">
+                        <div class="spec-label">Количество скоростей</div>
+                        <div class="spec-value">21 Скорость</div>
+                    </div>
+                    <div class="spec-item">
+                        <div class="spec-label">Тип рамы</div>
+                        <div class="spec-value">Твердый</div>
+                    </div>
+                    <div class="spec-item">
+                        <div class="spec-label">Цвет</div>
+                        <div class="spec-value">Серый</div>
+                    </div>
+                    <div class="spec-item">
+                        <div class="spec-label">Вилка</div>
+                        <div class="spec-value">Пружина-эластомер</div>
+                    </div>
+                  
+                  
+                    <div class="spec-item">
+                        <div class="spec-label">Высота велосипедиста</div>
+                        <div class="spec-value">170-185 см</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab functionality
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.getAttribute('data-tab');
+                
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+                
+                tab.classList.add('active');
+                document.getElementById(tabId).classList.add('active');
+            });
+        });
+
+        // Counter animation
+        const counters = document.querySelectorAll('.counter');
+        const speed = 200;
+
+        counters.forEach(counter => {
+            const updateCount = () => {
+                const target = +counter.getAttribute('data-target');
+                const count = +counter.innerText;
+                const inc = target / speed;
+
+                if (count < target) {
+                    counter.innerText = Math.ceil(count + inc);
+                    setTimeout(updateCount, 1);
+                } else {
+                    counter.innerText = target;
+                }
+            };
+
+            updateCount();
+        });
+
+        // Performance Chart
+        const ctx = document.getElementById('recordChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                datasets: [{
+                    label: 'Average Speed (km/h)',
+                    data: [20, 22, 25, 27, 30, 32],
+                    borderColor: '#3498db',
+                    tension: 0.1
+                }, {
+                    label: 'Distance (km)',
+                    data: [100, 150, 200, 180, 250, 300],
+                    borderColor: '#2ecc71',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // GSAP animations
+        gsap.from(".card", {
+            duration: 1,
+            y: 50,
+            opacity: 0,
+            stagger: 0.2,
+            ease: "power3.out"
+        });
+
+        gsap.from(".stat", {
+            duration: 1,
+            scale: 0.5,
+            opacity: 0,
+            stagger: 0.1,
+            ease: "back.out(1.7)"
+        });
+
+        gsap.from(".bicycle-image", {
+            duration: 1.5,
+            x: -100,
+            opacity: 0,
+            ease: "elastic.out(1, 0.3)"
+        });
+    </script>
+</body>
+</html> 
